@@ -7,6 +7,7 @@
     },
     data() {
       return {
+        typingIndicator: '',
         user: null,
         inputMessage: '',
         socket: null,
@@ -18,7 +19,8 @@
         chatUsers: [],
         specificChat: [],
         chatCurrent: [],
-        targetMessage: ''
+        targetMessage: '',
+        groupChatActive: false
       }
     },
     methods: {
@@ -52,8 +54,10 @@
           date: msg.dateTime,
           reciever: msg.message.reciever
         })
+        this.typingIndicator = ''
       },
       async targetUserHistory(username) {
+        this.groupChatActive = false
         this.targetMessage = username
         this.chatCurrent = []
         this.specificChat = []
@@ -74,6 +78,21 @@
           }
         }
       },
+      async targetGroupChat() {
+        this.groupChatActive = true
+        this.targetMessage = 'group'
+        this.chatCurrent = []
+        this.specificChat = []
+        const data = await fetch('http://localhost:3000/messages')
+        this.chatHistory = await data.json()
+
+        for (let i = 0; i < this.chatHistory.length; i++) {
+          const msg = this.chatHistory[i]
+          if (this.chatHistory[i].reciever === this.targetMessage) {
+            this.specificChat.push(msg)
+          }
+        }
+      },
       isTargetMessage(chat) {
         return (
           (chat.user === this.user && chat.reciever === this.targetMessage) ||
@@ -87,6 +106,20 @@
       }
     },
 
+    watch: {
+      inputMessage: {
+        handler() {
+          if (this.inputMessage) {
+            this.socket.emit('typing', { user: this.user })
+          } else if (!this.inputMessage) {
+            this.socket.emit('notTyping', { user: this.user })
+          }
+        },
+        immediate: false,
+        deep: true
+      }
+    },
+
     mounted() {
       this.socket = io('http://localhost:3000', {
         transports: ['websocket']
@@ -97,6 +130,14 @@
       })
       this.socket.on('newChatMessage', this.newChatMessage)
       this.socket.on('chatUser', this.chatUser)
+
+      this.socket.on('userTyping', ({ username }) => {
+        this.typingIndicator = `${username.user} is typing...`
+      })
+
+      this.socket.on('userNotTyping', () => {
+        this.typingIndicator = ''
+      })
     }
   }
 </script>
@@ -117,6 +158,13 @@
         {{ cUser }}
       </div>
     </div>
+    <div
+      style="margin-left: auto"
+      class="users-collection"
+      @click="targetGroupChat()"
+    >
+      <div class="user-box">Groupchat</div>
+    </div>
   </div>
   <!-- MongoDB -->
   <div class="chatbox-container">
@@ -135,7 +183,7 @@
 
     <!-- Socket.io -->
     <ul class="messages-mongo" v-for="chat in chatCurrent" :key="chat._Id">
-      <div v-if="isTargetMessage(chat)">
+      <div v-if="isTargetMessage(chat) && !groupChatActive">
         <p :id="chat.user === user ? 'mongo-user-host' : 'mongo-user'">
           {{ chat.user }} {{ chat.date }}
         </p>
@@ -145,7 +193,25 @@
       </div>
     </ul>
 
+    <!-- Socket.io Groupchat-->
+    <ul class="messages-mongo" v-for="chat in chatCurrent" :key="chat._Id">
+      <div v-if="groupChatActive">
+        <p :id="chat.user === user ? 'mongo-user-host' : 'mongo-user'">
+          {{ chat.user }} {{ chat.date }}
+        </p>
+        <li :id="chat.user === user ? 'user-add' : 'user-recieve'">
+          {{ chat.message }}
+        </li>
+      </div>
+    </ul>
     <!-- Input-field -->
+    <li
+      style="margin-left: 10px"
+      v-if="typingIndicator && groupChatActive"
+      class="typing-indicator"
+    >
+      {{ typingIndicator }}
+    </li>
     <div id="message" class="input-message-container" v-if="targetMessage">
       <form id="formMessage">
         <input

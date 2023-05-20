@@ -6,6 +6,7 @@ const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
 const port = 3000;
+const moment = require("moment");
 
 // Mongoose
 const mongoose = require("mongoose");
@@ -28,11 +29,19 @@ app.use(
 app.use(express.static("public"));
 app.use(express.json());
 
-// Endpoint för att visa meddelanden från mongoDB
 app.get("/messages", async (req, res) => {
   try {
     const allMessages = await MessageModel.find();
-    return res.status(200).json(allMessages);
+
+    const formattedMessages = allMessages.map((message) => {
+      const formattedDate = moment(message.date).format("YYYY-MM-DD HH:mm:ss");
+      return {
+        ...message.toObject(),
+        date: formattedDate,
+      };
+    });
+
+    return res.status(200).json(formattedMessages);
   } catch (error) {
     return res.status(500).json({
       error: error.message,
@@ -78,32 +87,33 @@ app.delete("/messages", async (req, res) => {
 io.on("connection", (socket) => {
   console.log(`A client with id ${socket.id} connected to the chat!`);
 
-  socket.on("chatMessage", (msg) => {
-    let today = new Date();
-    let date =
-      today.getFullYear() +
-      "-" +
-      (today.getMonth() + 1) +
-      "-" +
-      today.getDate();
-    let time =
-      today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
-    let dateTime = date + " " + time;
+  socket.on("typing", (user) => {
+    socket.join("groupChat"); // Join the group chat room
+    socket.to("groupChat").emit("userTyping", { username: user });
+  });
 
-    // io.emit("chatUser", msg.user + " " + dateTime);
+  socket.on("notTyping", (user) => {
+    socket.join("groupChat"); // Join the group chat room
+    socket.to("groupChat").emit("userNotTyping", { username: user });
+  });
+
+  socket.on("chatMessage", (msg) => {
+    let today = moment();
+    let dateTime = today.format("YYYY-MM-DD HH:mm:ss");
+
     io.emit("newChatMessage", { message: msg, dateTime: dateTime });
 
     let user = msg.user;
     let message = msg.message;
     let reciever = msg.reciever;
 
-    // Sparar till MongoDB med Mongoose
     const newMessage = new MessageModel({
       message: message,
       user: user,
       reciever: reciever,
       date: dateTime,
     });
+
     newMessage.save();
   });
 
