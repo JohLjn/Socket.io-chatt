@@ -17,10 +17,21 @@
         inputUser: '',
         inputUserPassword: '',
         users: null,
-        usersHistory: []
+        usersHistory: [],
+        failedInput: false
       }
     },
     methods: {
+      submitForm() {
+        if (
+          this.inputUser.trim() === '' ||
+          this.inputUserPassword.trim() === ''
+        ) {
+          this.failedInput = true
+        } else {
+          this.navigateToChat()
+        }
+      },
       navigateToChat() {
         const matchedUser = this.users.find(
           (user) =>
@@ -28,11 +39,14 @@
             user.password === this.inputUserPassword
         )
         if (matchedUser) {
+          this.failedInput = false
           localStorage.setItem('loggedIn', 'true')
           this.$router.push({
             path: `/chat/`,
             query: { user: this.inputUser }
           })
+        } else {
+          this.failedInput = true
         }
       },
       async usersDb() {
@@ -59,20 +73,29 @@
       <input
         placeholder="Name "
         v-model="inputUser"
+        :class="{ 'invalid-input': failedInput }"
         type="text"
         id="inputUser"
+        @keyup.enter="submitForm"
       />
       <input
         placeholder="Password "
         v-model="inputUserPassword"
+        :class="{ 'invalid-input': failedInput }"
         type="password"
         id="inputUserPassword"
-      /><button id="login-btn" @click="navigateToChat()">Send</button>
+        @keyup.enter="submitForm"
+      />
+      <p style="margin-bottom: 0px" v-if="failedInput">😡</p>
+      <button id="login-btn" @click="navigateToChat()">Send</button>
     </div>
   </main>
 </template>
 
 <style scoped>
+  .invalid-input {
+    border-color: rgb(241, 12, 12);
+  }
   main {
     display: flex;
     justify-content: center;
