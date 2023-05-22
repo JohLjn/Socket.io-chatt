@@ -1,5 +1,20 @@
 const mongoose = require("mongoose");
 
+//User schema
+const UserSchema = new mongoose.Schema({
+  username: {
+    type: String,
+    required: true,
+  },
+  password: {
+    type: String,
+    required: true,
+  },
+});
+
+const User = mongoose.model("User", UserSchema);
+
+//Message schema
 const MessageSchema = new mongoose.Schema({
   user: {
     type: String,
@@ -19,4 +34,7 @@ const MessageSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("message", MessageSchema);
+const Message = mongoose.model("message", MessageSchema);
+
+//Export modules
+module.exports = { User, Message };

@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 
 import LoginView from './views/LoginView.vue'
 import ChatView from './views/ChatView.vue'
+import { beforeEnter } from './views/LoginView.vue'
 
 export default createRouter({
   history: createWebHashHistory(),
@@ -12,7 +13,8 @@ export default createRouter({
     },
     {
       component: ChatView,
-      path: '/chat/:id'
+      path: '/chat',
+      beforeEnter: beforeEnter
     }
   ]
 })

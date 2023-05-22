@@ -3,6 +3,7 @@
   export default {
     created() {
       this.savedMessages()
+      this.savedUsers()
       this.user = this.$route.query.user
     },
     data() {
@@ -27,9 +28,19 @@
       async savedMessages() {
         const data = await fetch('http://localhost:3000/messages')
         this.chatHistory = await data.json()
-        for (let i = 0; i < this.chatHistory.length; i++) {
-          const user = this.chatHistory[i].user
-          if (!this.chatUsers.includes(user)) {
+        // for (let i = 0; i < this.chatHistory.length; i++) {
+        //   const user = this.chatHistory[i].user
+        //   if (!this.chatUsers.includes(user)) {
+        //     this.chatUsers.push(user)
+        //   }
+        // }
+      },
+      async savedUsers() {
+        const data = await fetch('http://localhost:3000/users')
+        this.allUsers = await data.json()
+        for (let i = 0; i < this.allUsers.length; i++) {
+          const user = this.allUsers[i].username
+          if (!this.allUsers.includes(user)) {
             this.chatUsers.push(user)
           }
         }
@@ -230,6 +241,7 @@
         </div>
       </form>
     </div>
+    <!-- Intro text -->
     <div class="intro-container-text" v-else>
       <h2>Hej {{ user }}!</h2>
       <p>

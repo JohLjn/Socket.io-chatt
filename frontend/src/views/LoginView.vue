@@ -1,30 +1,45 @@
 <script>
+  const beforeEnter = (to, from, next) => {
+    if (!localStorage.getItem('loggedIn')) {
+      next('/')
+    } else {
+      next()
+    }
+  }
+
   export default {
     created() {
-      this.savedMessages()
+      this.usersDb()
     },
     data() {
       return {
         user: null,
         inputUser: '',
-        msgDb: null,
+        inputUserPassword: '',
+        users: null,
         usersHistory: []
       }
     },
     methods: {
       navigateToChat() {
-        if (this.usersHistory.includes(this.inputUser)) {
+        const matchedUser = this.users.find(
+          (user) =>
+            user.username === this.inputUser &&
+            user.password === this.inputUserPassword
+        )
+        if (matchedUser) {
+          localStorage.setItem('loggedIn', 'true')
           this.$router.push({
-            path: `/chat/1`,
+            path: `/chat/`,
             query: { user: this.inputUser }
           })
         }
       },
-      async savedMessages() {
-        const data = await fetch('http://localhost:3000/messages')
-        this.msgDb = await data.json()
-        for (let i = 0; i < this.msgDb.length; i++) {
-          const user = this.msgDb[i].user
+      async usersDb() {
+        const data = await fetch('http://localhost:3000/users')
+        this.users = await data.json()
+        for (let i = 0; i < this.users.length; i++) {
+          const user = this.users[i].username
           if (!this.usersHistory.includes(user)) {
             this.usersHistory.push(user)
           }
@@ -32,11 +47,13 @@
       }
     }
   }
+
+  // Register the guard outside the component options
+  export { beforeEnter }
 </script>
 
 <template>
   <main>
-
     <div id="user">
       <h1>😎✌</h1>
       <input
@@ -44,6 +61,12 @@
         v-model="inputUser"
         type="text"
         id="inputUser"
+      />
+      <input
+        placeholder="Password "
+        v-model="inputUserPassword"
+        type="password"
+        id="inputUserPassword"
       /><button id="login-btn" @click="navigateToChat()">Send</button>
     </div>
   </main>
@@ -64,8 +87,13 @@
     align-items: center;
     padding: 15px;
   }
-  #inputUser {
+  #inputUser,
+  #inputUserPassword {
     padding: 5px;
+  }
+
+  #inputUserPassword {
+    margin-top: 15px;
   }
 
   #login-btn {
