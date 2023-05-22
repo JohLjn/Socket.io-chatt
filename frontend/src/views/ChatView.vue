@@ -159,7 +159,7 @@
       </div>
     </div>
     <div
-      style="margin-left: auto"
+      style="margin-left: auto; width: 15%;"
       class="users-collection"
       @click="targetGroupChat()"
     >
