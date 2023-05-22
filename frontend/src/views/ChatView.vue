@@ -3,6 +3,7 @@
   export default {
     created() {
       this.savedMessages()
+      this.savedUsers()
       this.user = this.$route.query.user
     },
     data() {
@@ -27,9 +28,13 @@
       async savedMessages() {
         const data = await fetch('http://localhost:3000/messages')
         this.chatHistory = await data.json()
-        for (let i = 0; i < this.chatHistory.length; i++) {
-          const user = this.chatHistory[i].user
-          if (!this.chatUsers.includes(user)) {
+      },
+      async savedUsers() {
+        const data = await fetch('http://localhost:3000/users')
+        this.allUsers = await data.json()
+        for (let i = 0; i < this.allUsers.length; i++) {
+          const user = this.allUsers[i].username
+          if (!this.allUsers.includes(user)) {
             this.chatUsers.push(user)
           }
         }
@@ -98,6 +103,10 @@
           (chat.user === this.user && chat.reciever === this.targetMessage) ||
           (chat.user === this.targetMessage && chat.reciever === this.user)
         )
+      },
+      logout() {
+        localStorage.removeItem('loggedIn')
+        this.$router.push('/')
       }
     },
     computed: {
@@ -145,9 +154,9 @@
 <template>
   <!-- Header -->
   <div class="user-selection-container">
-    <router-link to="/" class="users-collection">
-      <div class="user-box">Logout</div>
-    </router-link>
+    <div @click="logout()" class="users-collection">
+      <div id="logout-box" class="user-box">Logout</div>
+    </div>
     <div
       class="users-collection"
       v-for="cUser in filteredUsers"
@@ -230,6 +239,7 @@
         </div>
       </form>
     </div>
+    <!-- Intro text -->
     <div class="intro-container-text" v-else>
       <h2>Hej {{ user }}!</h2>
       <p>
@@ -267,6 +277,11 @@
     box-shadow: 0px -0.5px 2px rgb(182, 181, 181);
     display: flex;
     justify-content: center;
+  }
+
+  #logout-box {
+    text-decoration: underline;
+    color: orange;
   }
 
   .chatbox-container {

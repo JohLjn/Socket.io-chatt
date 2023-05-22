@@ -10,7 +10,8 @@ const moment = require("moment");
 
 // Mongoose
 const mongoose = require("mongoose");
-const MessageModel = require("./models");
+const { Message } = require("./models");
+const { User } = require("./models");
 
 const start = async () => {
   try {
@@ -29,9 +30,57 @@ app.use(
 app.use(express.static("public"));
 app.use(express.json());
 
+app.get("/users", async (req, res) => {
+  try {
+    const users = await User.find();
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/users", async (req, res) => {
+  try {
+    const { users } = req.body;
+
+    const createdUsers = [];
+
+    for (const user of users) {
+      const newUser = new User({
+        username: user.username,
+        password: user.password,
+      });
+
+      const savedUser = await newUser.save();
+
+      createdUsers.push(savedUser);
+    }
+
+    res
+      .status(201)
+      .json({ message: "Users created successfully", users: createdUsers });
+  } catch (error) {
+    console.error("Error creating users:", error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.delete("/users", async (req, res) => {
+  try {
+    await User.deleteMany();
+
+    return res.status(200).json({ message: "Database deleted successfully" });
+  } catch (error) {
+    return res.status(500).json({
+      error: error.message,
+    });
+  }
+});
+
 app.get("/messages", async (req, res) => {
   try {
-    const allMessages = await MessageModel.find();
+    const allMessages = await Message.find();
 
     const formattedMessages = allMessages.map((message) => {
       const formattedDate = moment(message.date).format("YYYY-MM-DD HH:mm:ss");
@@ -49,12 +98,12 @@ app.get("/messages", async (req, res) => {
   }
 });
 
-//Manuellt mata in en ny användare
+// Manuellt mata in en ny användare
 app.post("/messages", async (req, res) => {
   try {
     const { user, message, reciever, date } = req.body;
 
-    const newMessage = new MessageModel({
+    const newMessage = new Message({
       user,
       message,
       reciever,
@@ -71,10 +120,10 @@ app.post("/messages", async (req, res) => {
   }
 });
 
-// Endpoint för att radera alla meddelanden
+// // Endpoint för att radera alla meddelanden
 app.delete("/messages", async (req, res) => {
   try {
-    await MessageModel.deleteMany();
+    await Message.deleteMany();
 
     return res.status(200).json({ message: "Database deleted successfully" });
   } catch (error) {
@@ -107,7 +156,7 @@ io.on("connection", (socket) => {
     let message = msg.message;
     let reciever = msg.reciever;
 
-    const newMessage = new MessageModel({
+    const newMessage = new Message({
       message: message,
       user: user,
       reciever: reciever,
