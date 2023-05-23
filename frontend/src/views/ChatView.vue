@@ -21,7 +21,9 @@
         specificChat: [],
         chatCurrent: [],
         targetMessage: '',
-        groupChatActive: false
+        groupChatActive: false,
+        userImage: '',
+        guestImage: ''
       }
     },
     methods: {
@@ -32,10 +34,15 @@
       async savedUsers() {
         const data = await fetch('http://localhost:3000/users')
         this.allUsers = await data.json()
+
         for (let i = 0; i < this.allUsers.length; i++) {
+          const userImage = this.allUsers[i].profileImg
           const user = this.allUsers[i].username
           if (!this.allUsers.includes(user)) {
             this.chatUsers.push(user)
+          }
+          if (user === this.user) {
+            this.userImage = userImage
           }
         }
       },
@@ -46,7 +53,8 @@
           this.socket.emit('chatMessage', {
             user: this.user,
             message: this.inputMessage,
-            reciever: this.targetMessage
+            reciever: this.targetMessage,
+            profileImg: this.userImage
           })
           this.inputMessage = ''
         }
@@ -57,6 +65,7 @@
           message: msg.message.message,
           user: msg.message.user,
           date: msg.dateTime,
+          profileImg: msg.message.profileImg,
           reciever: msg.message.reciever
         })
         this.typingIndicator = ''
@@ -82,22 +91,49 @@
             this.specificChat.push(msg)
           }
         }
+        //Fetch profileImages
+        const dataUsers = await fetch('http://localhost:3000/users')
+        const users = await dataUsers.json()
+
+        for (let i = 0; i < this.specificChat.length; i++) {
+          const chatUser = this.specificChat[i].user
+          for (let j = 0; j < users.length; j++) {
+            if (users[j].username === chatUser) {
+              this.specificChat[i].profileImg = users[j].profileImg
+            }
+          }
+        }
       },
       async targetGroupChat() {
         this.groupChatActive = true
         this.targetMessage = 'group'
         this.chatCurrent = []
         this.specificChat = []
+
         const data = await fetch('http://localhost:3000/messages')
         this.chatHistory = await data.json()
 
         for (let i = 0; i < this.chatHistory.length; i++) {
           const msg = this.chatHistory[i]
-          if (this.chatHistory[i].reciever === this.targetMessage) {
+          if (msg.reciever === this.targetMessage) {
             this.specificChat.push(msg)
           }
         }
+
+        //Fetch profileImages
+        const dataUsers = await fetch('http://localhost:3000/users')
+        const users = await dataUsers.json()
+
+        for (let i = 0; i < this.specificChat.length; i++) {
+          const chatUser = this.specificChat[i].user
+          for (let j = 0; j < users.length; j++) {
+            if (users[j].username === chatUser) {
+              this.specificChat[i].profileImg = users[j].profileImg
+            }
+          }
+        }
       },
+
       isTargetMessage(chat) {
         return (
           (chat.user === this.user && chat.reciever === this.targetMessage) ||
@@ -178,44 +214,66 @@
   <!-- MongoDB -->
   <div class="chatbox-container">
     <ul class="messages-mongo">
-      <div v-for="chat in specificChat" :key="chat._id">
-        <p :id="chat.user === user ? 'mongo-user-host' : 'mongo-user'">
-          {{ chat.user }} {{ chat.date }}
-        </p>
-        <li
-          :id="chat.user === user ? 'mongo-messages' : 'mongo-messages-guest'"
-        >
-          {{ chat.message }}
-        </li>
+      <div
+        class="justifty-cont-container"
+        v-for="chat in specificChat"
+        :key="chat._id"
+        :id="chat.user !== user ? 'justify-cont-user' : ''"
+      >
+        <div style="width: 100%">
+          <p :id="chat.user === user ? 'mongo-user-host' : 'mongo-user'">
+            {{ chat.user }} {{ chat.date }}
+          </p>
+          <li
+            :id="chat.user === user ? 'mongo-messages' : 'mongo-messages-guest'"
+          >
+            {{ chat.message }}
+          </li>
+        </div>
+        <img class="user-profile-pic" :src="chat.profileImg" alt="send" />
       </div>
     </ul>
 
     <!-- Socket.io -->
     <ul class="messages-mongo" v-for="chat in chatCurrent" :key="chat._Id">
-      <div v-if="isTargetMessage(chat) && !groupChatActive">
-        <p :id="chat.user === user ? 'mongo-user-host' : 'mongo-user'">
-          {{ chat.user }} {{ chat.date }}
-        </p>
-        <li :id="chat.user === user ? 'user-add' : 'user-recieve'">
-          {{ chat.message }}
-        </li>
+      <div
+        class="justifty-cont-container"
+        v-if="isTargetMessage(chat) && !groupChatActive"
+        :id="chat.user !== user ? 'justify-cont-user' : ''"
+      >
+        <div style="width: 100%">
+          <p :id="chat.user === user ? 'mongo-user-host' : 'mongo-user'">
+            {{ chat.user }} {{ chat.date }}
+          </p>
+          <li :id="chat.user === user ? 'user-add' : 'user-recieve'">
+            {{ chat.message }}
+          </li>
+        </div>
+        <img class="user-profile-pic" :src="chat.profileImg" alt="send" />
       </div>
     </ul>
 
     <!-- Socket.io Groupchat-->
     <ul class="messages-mongo" v-for="chat in chatCurrent" :key="chat._Id">
-      <div v-if="groupChatActive">
-        <p :id="chat.user === user ? 'mongo-user-host' : 'mongo-user'">
-          {{ chat.user }} {{ chat.date }}
-        </p>
-        <li :id="chat.user === user ? 'user-add' : 'user-recieve'">
-          {{ chat.message }}
-        </li>
+      <div
+        class="justifty-cont-container"
+        v-if="groupChatActive"
+        :id="chat.user !== user ? 'justify-cont-user' : ''"
+      >
+        <div style="width: 100%">
+          <p :id="chat.user === user ? 'mongo-user-host' : 'mongo-user'">
+            {{ chat.user }} {{ chat.date }}
+          </p>
+          <li :id="chat.user === user ? 'user-add' : 'user-recieve'">
+            {{ chat.message }}
+          </li>
+        </div>
+        <img class="user-profile-pic" :src="chat.profileImg" alt="send" />
       </div>
     </ul>
     <!-- Input-field -->
     <li
-      style="margin-left: 10px"
+      style="margin-left: 10px; margin-top: 10px;"
       v-if="typingIndicator && groupChatActive"
       class="typing-indicator"
     >
@@ -226,6 +284,7 @@
         <input
           placeholder="Message"
           v-model="inputMessage"
+          @keyup.enter="sendMessage"
           type="text"
           id="inputMessage"
         />
@@ -308,9 +367,26 @@
   .messages-mongo {
     display: flex;
     flex-direction: column;
-    padding: 0px 20px 20px 20px;
+    padding: 0px 5px 20px 5px;
     padding-bottom: 0px;
     border-radius: 10px;
+  }
+
+  .justifty-cont-container {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  #justify-cont-user {
+    flex-direction: row-reverse;
+  }
+
+  .user-profile-pic {
+    width: 46px;
+    height: 46px;
+    align-self: center;
+    margin: 10px 10px 0px 10px;
+    border-radius: 50%;
   }
 
   body {
@@ -387,6 +463,7 @@
     border-top: 1px solid rgb(192, 190, 190);
     display: flex;
     justify-content: center;
+    margin-top: 10px;
   }
 
   #inputMessage {
@@ -423,11 +500,11 @@
     font-size: 1rem;
   }
   #user-recieve {
+    background-color: #f4f4f4;
     width: 75%;
     padding: 10px;
     border-radius: 8px;
     font-size: 1rem;
-    background-color: #f4f4f4;
     color: black;
   }
   .intro-container-text {

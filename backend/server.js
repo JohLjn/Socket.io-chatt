@@ -30,6 +30,7 @@ app.use(
 app.use(express.static("public"));
 app.use(express.json());
 
+//Get users
 app.get("/users", async (req, res) => {
   try {
     const users = await User.find();
@@ -40,6 +41,7 @@ app.get("/users", async (req, res) => {
   }
 });
 
+//Add user
 app.post("/users", async (req, res) => {
   try {
     const { users } = req.body;
@@ -50,6 +52,7 @@ app.post("/users", async (req, res) => {
       const newUser = new User({
         username: user.username,
         password: user.password,
+        profileImg: user.profileImg,
       });
 
       const savedUser = await newUser.save();
@@ -66,6 +69,7 @@ app.post("/users", async (req, res) => {
   }
 });
 
+//Delete all users
 app.delete("/users", async (req, res) => {
   try {
     await User.deleteMany();
@@ -78,6 +82,7 @@ app.delete("/users", async (req, res) => {
   }
 });
 
+//Get all messages
 app.get("/messages", async (req, res) => {
   try {
     const allMessages = await Message.find();
@@ -98,7 +103,7 @@ app.get("/messages", async (req, res) => {
   }
 });
 
-// Manuellt mata in en ny användare
+// Manually add a message to the db
 app.post("/messages", async (req, res) => {
   try {
     const { user, message, reciever, date } = req.body;
@@ -120,7 +125,7 @@ app.post("/messages", async (req, res) => {
   }
 });
 
-// // Endpoint för att radera alla meddelanden
+// Delete all messages
 app.delete("/messages", async (req, res) => {
   try {
     await Message.deleteMany();
@@ -133,6 +138,7 @@ app.delete("/messages", async (req, res) => {
   }
 });
 
+// Socket
 io.on("connection", (socket) => {
   console.log(`A client with id ${socket.id} connected to the chat!`);
 
