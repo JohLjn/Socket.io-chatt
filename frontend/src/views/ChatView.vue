@@ -15,7 +15,6 @@
         addName: true,
         socketID: null,
         chatUserSend: false,
-        chatMessages: [],
         chatHistory: [],
         chatUsers: [],
         specificChat: [],
@@ -23,7 +22,6 @@
         targetMessage: '',
         groupChatActive: false,
         userImage: '',
-        guestImage: ''
       }
     },
     methods: {
@@ -326,7 +324,7 @@
 <style scoped>
   .user-selection-container {
     display: flex;
-    width: 45%;
+    width: 80%;
     margin: 30px auto 0px auto;
   }
 
@@ -347,7 +345,7 @@
     display: flex;
     flex-direction: column;
     box-shadow: 0px 0px 3px black;
-    width: 45%;
+    width: 80%;
     margin: 0px auto 40px auto;
   }
 
